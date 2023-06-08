@@ -1,0 +1,76 @@
+import numpy as np 
+from keras.layers import Dense, Conv2D, MaxPooling2D, Flatten, Activation 
+from keras.models import Sequential 
+from keras.optimizers import Adam 
+from keras.utils import np_utils 
+from tensorflow.python.keras.layers import Dropout 
+import matplotlib.pyplot as plt 
+import os 
+import pandas as pd 
+
+ 
+os.environ['KMP_DUPLICATE_LIB_OK']='True' 
+
+# filename指定時に使用 
+title = "Shuffle_crop64" 
+
+ 
+
+# クラス名をリストに格納 
+classes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
+
+# クラス数を取得 
+num_classes = len(classes) 
+
+# 学習に使用する画像サイズを指定 
+image_size = 64 
+
+ 
+# 学習データを読み込み 
+x_train, x_test, y_train, y_test = np.load("filepath/%s.npy"%title, allow_pickle=True) 
+
+ 
+# 正規化 
+x_train = x_train.astype("float") / 255 
+x_test = x_test.astype("float") / 255 
+
+
+# ワンホットエンコーディング 
+y_train = np_utils.to_categorical(y_train, num_classes) 
+y_test = np_utils.to_categorical(y_test, num_classes) 
+
+ 
+# モデル作成 
+model = Sequential() 
+model.add(Conv2D(32, (3, 3), padding='same', input_shape=(image_size, image_size, 1))) 
+model.add(Activation('relu')) 
+model.add(MaxPooling2D(pool_size=(2, 2))) 
+model.add(Dropout(0.1)) 
+model.add(Flatten()) 
+model.add(Dense(256)) 
+model.add(Activation('relu')) 
+model.add(Dense(num_classes, activation='softmax'))  # 分類するクラス数を指定 
+model.summary() 
+
+
+# モデルをコンパイル 
+model.compile(loss='categorical_crossentropy', optimizer=Adam(), metrics='accuracy') 
+
+
+# 学習開始 
+history = model.fit(x_train, y_train, epochs=20) 
+
+# 学習過程をcsvで保存 
+hist_df = pd.DataFrame(history.history) 
+hist_df.to_csv("filepathe/history_%s.csv"%title) 
+
+# テスト結果を表示 
+print('\n<Evaluate>') 
+score = model.evaluate(x_test, y_test) 
+print("test loss score : ", score[0]) 
+print("test accuracy : ", score[1]) 
+
+# テスト結果をtxtで保存 
+with open('filepath/%s_test_score.txt'%title, 'w') as f: 
+  print("test loss score : ", score[0], file=f) 
+  print("test accuracy : ", score[1], file=f) 
