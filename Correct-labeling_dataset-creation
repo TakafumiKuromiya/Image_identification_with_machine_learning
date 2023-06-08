@@ -1,0 +1,95 @@
+import glob 
+import numpy as np 
+from PIL import ImageFile 
+from PIL import Image 
+
+
+ImageFile.LOAD_TRUNCATED_IMAGES = True 
+
+ 
+# 分類するクラス名を格納 
+classes = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9"] 
+
+# 画像サイズを指定 
+image_size = 64 
+
+# テストデータ数を指定 
+num_testdata = 10 
+
+ 
+
+ 
+
+# 中心でトリミングする関数を定義 
+def crop_center(pil_img, crop_width, crop_height): 
+    img_width, img_height = pil_img.size 
+    return pil_img.crop(((img_width - crop_width) // 2, 
+                         (img_height - crop_height) // 2, 
+                         (img_width + crop_width) // 2, 
+                         (img_height + crop_height) // 2)) 
+
+ 
+
+ 
+
+# 学習データとテストデータのリストを作成 
+x_train = [] 
+x_test = [] 
+y_train = [] 
+y_test = [] 
+
+# indexに要素番号、classlabelに要素名を格納 
+for index, classlabel in enumerate(classes): 
+
+    # パスを指定 
+    photos_dir = "filepath/" + classlabel 
+
+    # 指定したパスの「.jpg」とつくファイルをすべて読み込み 
+    files = glob.glob(photos_dir + "/*.jpg") 
+
+    # 読み込んだファイルの中から、iに要素番号、fileにファイル情報を格納 
+    for i, file in enumerate(files): 
+
+        # ファイルを展開 
+        image = Image.open(file) 
+        
+        # グレースケール、カラーなどを選択 
+        image = image.convert("L") 
+
+        # 画像をリサイズ（ダウンサンプリング） 
+        image = image.resize((image_size, image_size)) 
+
+        # 画像をトリミング（ダウンサンプリングかどちらか一方を選択） 
+        image = crop_center(image, image_size, image_size) 
+
+        # 画像データをNumpy配列化 
+        data = np.asarray(image) 
+
+        # 指定したテストデータ数をテストリストに格納 
+        if i < num_testdata: 
+
+            # データを格納 
+            x_test.append(data) 
+
+            # ラベルを格納 
+            y_test.append(index) 
+
+        else: 
+            x_train.append(data) 
+            y_train.append(index) 
+
+ 
+
+ 
+
+# Numpy配列化 
+x_train = np.array(x_train) 
+x_test = np.array(x_test) 
+y_train = np.array(y_train) 
+y_test = np.array(y_test) 
+
+ 
+xy = (x_train, x_test, y_train, y_test) 
+
+# Numpy配列として保存 
+np.save("filepath/filename.npy", xy) 
